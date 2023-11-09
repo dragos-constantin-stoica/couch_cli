@@ -19,7 +19,7 @@ var flex = tview.NewFlex()
 var form = tview.NewForm()
 var dbList = tview.NewList().ShowSecondaryText(false)
 var docList = tview.NewList().ShowSecondaryText(true)
-var docDetails = tview.NewTextView()
+var docDetails = tview.NewTextView().SetBorder(true)
 
 var text = tview.NewTextView().
 	SetTextColor(tcell.ColorGreen).
@@ -27,9 +27,13 @@ var text = tview.NewTextView().
 
 func main() {
 
+	dbList.SetBorder(true).SetTitle("Databases")
+	docList.SetBorder(true).SetTitle("Documents")
+	docDetails.SetBorder(true).SetTitle("Details")
+
 	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewFlex().AddItem(dbList, 0, 1, true).AddItem(docList, 0, 4, false), 0, 6, false).
-		AddItem(text, 0, 1, false)
+		AddItem(tview.NewFlex().AddItem(dbList, 0, 1, false).AddItem(docList, 0, 4, false), 0, 6, false).
+		AddItem(text, 1, 1, false)
 
 	flex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 113 {
@@ -42,8 +46,20 @@ func main() {
 		return event
 	})
 
+	// Returns a new primitive which puts the provided primitive in the center and
+	// sets its size to the given width and height.
+	modal := func(p tview.Primitive, width, height int) tview.Primitive {
+		return tview.NewFlex().
+			AddItem(nil, 0, 1, false).
+			AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(p, height, 1, true).
+				AddItem(nil, 0, 1, false), width, 1, true).
+			AddItem(nil, 0, 1, false)
+	}
+
 	pages.AddPage("Menu", flex, true, true)
-	pages.AddPage("Open", form, true, false)
+	pages.AddPage("Open", modal(form, 70, 7), true, false)
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
@@ -57,7 +73,7 @@ func addOpenDBForm() *tview.Form {
 		openurl.fullURL = dburl
 	})
 
-	form.AddButton("Save", func() {
+	form.AddButton("Connect", func() {
 		client, err := kivik.New("couch", openurl.fullURL)
 		if err != nil {
 			panic(err)

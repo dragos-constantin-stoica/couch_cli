@@ -150,9 +150,6 @@ run(){
 
     echo "CouchDB has successfuly started on http://couch.localhost:5984/_utils"
     echo "        user: $COUCHDB_USER | password: $COUCHDB_PASSWORD"
-    echo "Couch Admin Worker have successfully started on http://localhost:$WRK_PORT"
-    echo "Euro Invoice has successfully started on http://localhost:8080"
-    echo "Application available at https://localhost:$APP_PORT"
     echo -e "\n\n"
     echocolor "DONE >>> Run stage" "BIGreen" "Whale"
 }
