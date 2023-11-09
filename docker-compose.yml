@@ -1,0 +1,61 @@
+version: '3'
+name: couch_cli
+
+services:
+  
+  couch:
+    image: 'couchdb:3.3.1'
+    container_name: couch
+    hostname: couch
+    restart: always
+    environment:
+      - 'COUCHDB_USER=${COUCHDB_USER}'
+      - 'COUCHDB_PASSWORD=${COUCHDB_PASSWORD}'
+    ports:
+      - '5984:5984'
+    volumes:
+      - './dbcouch/etc:/opt/couchdb/etc/local.d'
+      - './dbcouch/data:/opt/couchdb/data'
+      - './dbcouch/log:/opt/couchdb/var/log'
+    networks:
+      - clinet
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '--fail'
+        - 'http://localhost:5984/_up'
+      start_period: 10s
+      interval: 10s
+      timeout: 10s
+      retries: 3
+  
+  couch_cli:
+    image: 'dragosstoica/couch_cli:1.0.0'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      tags:
+        - dragosstoica/couch_cli:1.0.0
+      secrets:
+        - cli_secrets
+    container_name: couch_cli
+    hostname: couch_cli
+    restart: unless-stopped
+    env_file: .env
+    stdin_open: true
+    tty: true
+    depends_on:
+      couch:
+        condition: service_healthy
+    networks:
+      - clinet
+
+networks:
+  clinet:
+    driver: bridge
+
+secrets:
+  cli_secrets:
+    file: ./secrets.app

@@ -1,0 +1,7 @@
+devops.sh
+emoji_color.sh
+.gitignore
+Dockerfile
+.dockerignore
+docker-compose.yml
+.env
