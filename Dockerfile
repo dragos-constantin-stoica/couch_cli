@@ -6,7 +6,7 @@ ENV CGO_ENABLED 0
 WORKDIR /usr/src/app
 
 # pre-copy/cache go.mod for pre-downloading dependencies and only redownloading them in subsequent builds if they change
-COPY go.mod ./
+COPY go.* ./
 #RUN go mod init couch_cli && go get github.com/rivo/tview 
 RUN go mod download && go mod verify
 COPY . .
