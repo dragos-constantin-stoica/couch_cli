@@ -103,38 +103,6 @@ EOF
     curl -X POST $COUCH_URL/_node/_local/_config/_reload
     curl -X GET $COUCH_URL/_cluster_setup
 
-    # Add application user with the role of technical user
-    curl -X PUT $COUCH_URL/_users/org.couchdb.user:$APP_USER \
-     -H "Accept: application/json" \
-     -H "Content-Type: application/json" \
-     -d '{"name":"'$APP_USER'", "password": "'$APP_PASSWORD'", "roles": ["technical_usr"], "type": "user"}'
-
-    # Companies database
-    curl -X PUT $COUCH_URL/companies
-    curl -H 'Content-Type: application/json' \
-         -X POST $COUCH_URL/companies/_index \
-         -d '{"index":{"fields": ["national_registration_number"]}, "name": "nrn_idx", "type":"json", "ddoc": "nrn_idx"}'
-    curl -X PUT $COUCH_URL/companies/_security \
-       -H 'content-type: application/json' \
-       -H 'accept: application/json' \
-       -d '{"admins":{"names":[],"roles":["_admin"]},"members":{"names": [],"roles": ["technical_usr"]}}'
-    curl -X PUT $COUCH_URL/companies/_design/audit_log \
-        -H 'content-type: application/json' \
-        -H 'accept: application/json' \
-        -d '{"_id":"_design/audit_log","language":"javascript","updates":{"log_record":"function(doc, req){\n          if (req.method == \"PUT\"){\n              var payload = JSON.parse(req.body);\n              if (doc === null){\n                var newdoc = {};\n                newdoc._id = req.uuid;\n                newdoc.doctype = \"auditlog\";\n                newdoc.who = req[\"userCtx\"][\"name\"];\n                newdoc.timestamp = Date.now();\n                newdoc.user = payload.user;\n                newdoc.action = payload.action;\n                return [newdoc, JSON.stringify({\"action\":\"created\", \"doc\": newdoc})];\n              }else{\n                //This is an update on existing record\n                return [null, JSON.stringify({ \"action\": \"error\", \"error\":\"Tempering existing audit log record.\"})]\n              }\n              //unknown request - send error with request payload\n              return [null, JSON.stringify({\"action\": \"error\",\"req\": req})];\n          }\n        }"}}'
-
-    curl -X PUT $COUCH_URL/companies/_design/audit_log/_update/log_record \
-        -H 'content-type: application/json' \
-        -H 'accept: application/json' \
-        -d '{ "user":"'$COUCHDB_USER'", "action":"Setup companies and contact databases."}'
-    # Contact and newsletter subscription database
-    curl -X PUT $COUCH_URL/contact
-    curl -X PUT $COUCH_URL/contact/_security \
-       -H 'content-type: application/json' \
-       -H 'accept: application/json' \
-       -d '{"admins":{"names":[],"roles":["_admin"]},"members":{"names": [],"roles": ["technical_usr"]}}'
-
-
     sleep 10
     docker compose down
 
@@ -192,13 +160,11 @@ run(){
 # dev function
 dev(){
     echocolor "DEV stage" "Blue" "Gear"
-    docker compose up -d euinvoiceapp
+    docker compose up -d couch_cli
 
     echo "CouchDB has successfuly started on http://couch.localhost:5984/_utils"
     echo "        user: $COUCHDB_USER | password: $COUCHDB_PASSWORD"
-    echo "Couch Admin Worker have successfully started on http://localhost:$WRK_PORT"
-    echo "Euro Invoice has successfully started on http://localhost:8080"
-
+    echo "Couch DB CLI up and running"
     echo -e "\n\n"
     echocolor "DONE >>> DEV" "Blue" "Alien"
 }
