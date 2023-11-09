@@ -92,7 +92,7 @@ EOF
     setting cors  credentials "true"
     setting cors  headers     "accept, authorization, content-type, origin, referer"
     setting cors  methods     "GET, PUT, POST, HEAD, DELETE"
-    setting cors  origins     "http://localhost:3000,http://localhost:8080,http://localhost:$WRK_PORT,http://localhost:$APP_PORT"
+    setting cors  origins     "http://localhost:3000,http://localhost:8080,http://localhost:$APP_PORT"
     setting chttpd enable_cors "true"
     setting chttpd require_valid_user "true"
     setting chttpd require_valid_user_except_for_up "true"
