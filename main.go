@@ -10,7 +10,12 @@ import (
 )
 
 type CouchDBURL struct {
-	fullURL string
+	fullURL string // http(s)://user:password@server:port
+	protocole string
+	user string
+	password string
+	server string
+	port string
 }
 
 var pages = tview.NewPages()
@@ -20,6 +25,9 @@ var form = tview.NewForm()
 var dbList = tview.NewList().ShowSecondaryText(false)
 var docList = tview.NewList().ShowSecondaryText(true)
 var docDetails = tview.NewTextView().SetBorder(true)
+var docflex = tview.NewFlex()
+var msgBox = tview.NewModal()
+
 
 var text = tview.NewTextView().
 	SetTextColor(tcell.ColorGreen).
@@ -31,12 +39,25 @@ func main() {
 	docList.SetBorder(true).SetTitle("Documents")
 	docDetails.SetBorder(true).SetTitle("Details")
 
+	docflex.SetDirection(tview.FlexRow).
+	AddItem(docList, 0, 1, false).
+	AddItem(docDetails, 0, 2, false)
+
+	msgBox.AddButtons([]string{"OK"}).
+		    		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+		    			if buttonLabel == "OK" {
+		    				pages.SwitchToPage("Menu")
+		    			}
+		    		}).
+		    		SetBorder(true).SetTitle("Message").SetTitleAlign(tview.AlignCenter)
+
+
 	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewFlex().AddItem(dbList, 0, 1, false).AddItem(docList, 0, 4, false), 0, 6, false).
+		AddItem(tview.NewFlex().AddItem(dbList, 0, 1, false).AddItem(docflex, 0, 4, false), 0, 1, false).
 		AddItem(text, 1, 1, false)
 
 	flex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Rune() == 113 {
+		if event.Rune() == 'q' {
 			app.Stop()
 		} else if event.Rune() == 'o' {
 			form.Clear(true)
@@ -60,6 +81,7 @@ func main() {
 
 	pages.AddPage("Menu", flex, true, true)
 	pages.AddPage("Open", modal(form, 70, 7), true, false)
+	pages.AddPage("Message", msgBox, true, false)
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
@@ -76,11 +98,17 @@ func addOpenDBForm() *tview.Form {
 	form.AddButton("Connect", func() {
 		client, err := kivik.New("couch", openurl.fullURL)
 		if err != nil {
-			panic(err)
+			messageBox(err.Error())
+			pages.SwitchToPage("Message")
+			return
+		   	//panic(err)
 		}
 		dbs, err := client.AllDBs(context.TODO(), nil)
 		if err != nil {
-			panic(err)
+			messageBox(err.Error())
+			pages.SwitchToPage("Message")
+			return
+			//panic(err)
 		}
 		dbList.Clear()
 		for index, db := range dbs {
@@ -92,4 +120,9 @@ func addOpenDBForm() *tview.Form {
 	form.SetBorder(true).SetTitle("Connect to CouchDB server").SetTitleAlign(tview.AlignCenter)
 
 	return form
+}
+
+func messageBox(msg string) *tview.Modal{
+  msgBox.SetText(msg)
+	return msgBox
 }
