@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	kivik "github.com/go-kivik/kivik/v4"
@@ -11,11 +13,12 @@ import (
 
 type CouchDBURL struct {
 	fullURL string // http(s)://user:password@server:port
-	protocole string
+	protocole string //htt, https
 	user string
 	password string
 	server string
 	port string
+	DBname string
 }
 
 var pages = tview.NewPages()
@@ -23,11 +26,13 @@ var app = tview.NewApplication()
 var flex = tview.NewFlex()
 var form = tview.NewForm()
 var dbList = tview.NewList().ShowSecondaryText(false)
-var docList = tview.NewList().ShowSecondaryText(true)
-var docDetails = tview.NewTextView().SetBorder(true)
+var docList = tview.NewList().ShowSecondaryText(false)
+var docDetails = tview.NewTextArea()
 var docflex = tview.NewFlex()
 var msgBox = tview.NewModal()
 
+var client kivik.Client
+var clientURL = CouchDBURL{}
 
 var text = tview.NewTextView().
 	SetTextColor(tcell.ColorGreen).
@@ -37,7 +42,7 @@ func main() {
 
 	dbList.SetBorder(true).SetTitle("Databases")
 	docList.SetBorder(true).SetTitle("Documents")
-	docDetails.SetBorder(true).SetTitle("Details")
+	docDetails.SetTitle("Doc Details").SetBorder(true)
 
 	docflex.SetDirection(tview.FlexRow).
 	AddItem(docList, 0, 1, false).
@@ -48,10 +53,72 @@ func main() {
 		    			if buttonLabel == "OK" {
 		    				pages.SwitchToPage("Menu")
 		    			}
-		    		}).
-		    		SetBorder(true).SetTitle("Message").SetTitleAlign(tview.AlignCenter)
+		    		})
 
+	dbList.SetSelectedFunc(func(index int, name string, second_name string, shortcut rune) {
+		clientURL.DBname = name
+		//messageBox(name)				
+		//pages.SwitchToPage("Message")
 
+		client, err := kivik.New("couch", clientURL.fullURL)
+		if err != nil {
+			messageBox(err.Error())
+			pages.SendToFront("Messages")
+			pages.ShowPage("Message")
+			return
+		}
+
+		crtDB := client.DB(clientURL.DBname)
+		
+		if crtDB.Err() != nil {
+			messageBox(crtDB.Err().Error())
+			pages.SendToFront("Messages")
+			pages.ShowPage("Message")
+		}
+		
+		allDocs := crtDB.AllDocs(context.TODO(), nil)
+		defer allDocs.Close()
+
+		    docList.Clear()
+		    docDetails.SetText("", false)
+		    idx := 0
+			for allDocs.Next() {				
+				//add doc_id to docList
+				var docid, _ = allDocs.ID()
+				docList.AddItem(docid, " ", rune(49+idx) , nil)
+				idx++
+			}
+			
+			if allDocs.Err() != nil {
+				messageBox(allDocs.Err().Error())
+			pages.SendToFront("Messages")
+			pages.ShowPage("Message")
+			}		
+	})
+
+	docList.SetSelectedFunc(func(index int, name string, second_name string, shortcut rune) {
+	
+		client, err := kivik.New("couch", clientURL.fullURL)
+		if err != nil {
+			messageBox(err.Error())
+			pages.SendToFront("Messages")
+			pages.ShowPage("Message")
+			return
+		}        
+		crtDB := client.DB(clientURL.DBname)
+		//get the document with the _id:name
+		var doc interface{}
+	    err = crtDB.Get(context.TODO(), name).ScanDoc(&doc)
+	    if err != nil {
+			messageBox(err.Error())
+			pages.SendToFront("Messages")
+			pages.ShowPage("Message")
+		}
+		docString, err := json.MarshalIndent(doc,"","\t")
+		docDetails.SetText(strings.ReplaceAll(string(docString),"\\n", "\n"), true)
+		
+	})
+		
 	flex.SetDirection(tview.FlexRow).
 		AddItem(tview.NewFlex().AddItem(dbList, 0, 1, false).AddItem(docflex, 0, 4, false), 0, 1, false).
 		AddItem(text, 1, 1, false)
@@ -62,7 +129,8 @@ func main() {
 		} else if event.Rune() == 'o' {
 			form.Clear(true)
 			addOpenDBForm()
-			pages.SwitchToPage("Open")
+			pages.SendToFront("Open")
+			pages.ShowPage("Open")
 		}
 		return event
 	})
@@ -89,24 +157,27 @@ func main() {
 }
 
 func addOpenDBForm() *tview.Form {
-	openurl := CouchDBURL{}
 
 	form.AddInputField("URL", "", 60, nil, func(dburl string) {
-		openurl.fullURL = dburl
+		clientURL.fullURL = dburl
 	})
 
 	form.AddButton("Connect", func() {
-		client, err := kivik.New("couch", openurl.fullURL)
+		client, err := kivik.New("couch", clientURL.fullURL)
 		if err != nil {
 			messageBox(err.Error())
-			pages.SwitchToPage("Message")
+			pages.HidePage("Open")
+			pages.SendToFront("Messages")
+			pages.ShowPage("Message")
 			return
 		   	//panic(err)
 		}
 		dbs, err := client.AllDBs(context.TODO(), nil)
 		if err != nil {
 			messageBox(err.Error())
-			pages.SwitchToPage("Message")
+			pages.HidePage("Open")
+			pages.SendToFront("Messages")
+			pages.ShowPage("Message")
 			return
 			//panic(err)
 		}
@@ -124,5 +195,5 @@ func addOpenDBForm() *tview.Form {
 
 func messageBox(msg string) *tview.Modal{
   msgBox.SetText(msg)
-	return msgBox
+  return msgBox
 }

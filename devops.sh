@@ -209,7 +209,7 @@ case $1 in
     "stop")     stop ;;
     "build")    build $2;;
     "prune")    prune;;
-    "test")     test_color; test_emoji;;
+    "test")     test_color; test_emoji; colors_formatting; test256colors;; 
     "usage")    usage ;;
     *)      	echocolor "unknown command: $1" "On_IRed" "Poo"
 	            usage ;;

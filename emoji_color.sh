@@ -33,10 +33,10 @@ colors[UWhite]='\033[4;37m'       # White
 colors[On_Black]='\033[40m'       # Black
 colors[On_Red]='\033[41m'         # Red
 colors[On_Green]='\033[42m'       # Green
-colors[On_Yellow]='\033[43m'      # Yellow
+colors[On_Yellow]='\033[30;43m'   # Yellow
 colors[On_Blue]='\033[44m'        # Blue
 colors[On_Purple]='\033[45m'      # Purple
-colors[On_Cyan]='\033[46m'        # Cyan
+colors[On_Cyan]='\033[30;46m'     # Cyan
 
 # High Intensity
 colors[IRed]='\033[0;91m'         # Red
@@ -53,17 +53,17 @@ colors[BIGreen]='\033[1;92m'      # Green
 colors[BIYellow]='\033[1;93m'     # Yellow
 colors[BIBlue]='\033[1;94m'       # Blue
 colors[BIPurple]='\033[1;95m'     # Purple
-colors[BICyan]='\033[1;96m'       # Cyan
+colors[BICyan]='\033[30;1;96m'    # Cyan
 colors[BIWhite]='\033[1;97m'      # White
 
 # High Intensity backgrounds
 colors[On_IBlack]='\033[0;100m'   # Black
 colors[On_IRed]='\033[0;101m'     # Red
 colors[On_IGreen]='\033[0;102m'   # Green
-colors[On_IYellow]='\033[0;103m'  # Yellow
-colors[On_IBlue]='\033[0;104m'    # Blue
+colors[On_IYellow]='\033[0;30;103m' # Yellow
+colors[On_IBlue]='\033[0;30;104m'    # Blue
 colors[On_IPurple]='\033[0;105m'  # Purple
-colors[On_ICyan]='\033[0;106m'    # Cyan
+colors[On_ICyan]='\033[0;30;106m'    # Cyan
 
 # Emoji
 declare -A emoji
@@ -116,4 +116,46 @@ test_emoji(){
   do
   	echo -e "$i = ${emoji[$i]}"
   done	
+}
+
+
+colors_formatting(){
+	# This program is free software. It comes without any warranty, to
+	# the extent permitted by applicable law. You can redistribute it
+	# and/or modify it under the terms of the Do What The Fuck You Want
+	# To Public License, Version 2, as published by Sam Hocevar. See
+	# http://sam.zoy.org/wtfpl/COPYING for more details.
+	 
+	#Background
+	for clbg in {40..47} {100..107} 49 ; do
+		#Foreground
+		for clfg in {30..37} {90..97} 39 ; do
+			#Formatting
+			for attr in 0 1 2 4 5 7 ; do
+				#Print the result
+				echo -en "\e[${attr};${clbg};${clfg}m ^[${attr};${clbg};${clfg}m \e[0m"
+			done
+			echo #Newline
+		done
+	done
+}
+
+test256colors(){
+	# This program is free software. It comes without any warranty, to
+	# the extent permitted by applicable law. You can redistribute it
+	# and/or modify it under the terms of the Do What The Fuck You Want
+	# To Public License, Version 2, as published by Sam Hocevar. See
+	# http://sam.zoy.org/wtfpl/COPYING for more details.
+	 
+	for fgbg in 38 48 ; do # Foreground / Background
+	    for color in {0..255} ; do # Colors
+	        # Display the color
+	        printf "\e[${fgbg};5;%sm  %3s  \e[0m" $color $color
+	        # Display 6 colors per lines
+	        if [ $((($color + 1) % 6)) == 4 ] ; then
+	            echo # New line
+	        fi
+	    done
+	    echo # New line
+	done
 }
