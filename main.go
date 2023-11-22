@@ -13,7 +13,7 @@ import (
 
 type CouchDBURL struct {
 	fullURL string // http(s)://user:password@server:port
-	protocole string //htt, https
+	protocol string //http, https
 	user string
 	password string
 	server string
