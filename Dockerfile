@@ -17,4 +17,5 @@ RUN go build -o /usr/local/bin/couch_cli
 FROM alpine:latest as production
 
 COPY --from=builder /usr/local/bin/couch_cli .
+RUN mkdir -p /cfg
 CMD ./couch_cli
