@@ -86,7 +86,7 @@ func main() {
 			}else{ 
 				dbList.Clear()
 				for index, db := range dbs {
-					dbList.AddItem(db, " ", rune(49+index), nil)
+					dbList.AddItem(db, " ", rune(48+index), nil)
 				}
 				status.SetText(fmt.Sprintf("[white]Connected to: %s", clientURL.fullURL))
 			}
